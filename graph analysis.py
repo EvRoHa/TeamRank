@@ -20,10 +20,14 @@ TEAMS = ["Air Force", "Akron", "Alabama", "Appalachian State", "Arizona", "Arizo
          "West Virginia", "Western Michigan", "Wisconsin", "Wyoming"]
 
 
-def TeamRank(data, p=0.85):
+def TeamRank(data, p=0.85, MOV=True):
     # to create the transition matrix, ignore all of the wins; transform the losses into positively weighted outbound edges
     data[data > 0] = 0
-    data[data < 0] *= -1
+    if MOV:
+        data[data < 0] *= -1
+    else:
+        data[data < 0] = 1
+
     A = csc_matrix(data, dtype=float)
     rsums = np.array(A.sum(0))[:, 0]
     A.data /= rsums
@@ -60,7 +64,7 @@ def TeamRank(data, p=0.85):
 if __name__ == '__main__':
     with open('matrix.txt', 'r') as infile:
         data = np.genfromtxt(infile, dtype=float, delimiter=',', skip_header=0, autostrip=True)
-    result = TeamRank(data)
+    result = TeamRank(data, MOV=False)
     result = [x for _, x in sorted(zip(result, TEAMS), reverse=True)]
-    for x in result:
-        print(x)
+    for x in enumerate(result):
+        print(x[0] + 1, x[1])
