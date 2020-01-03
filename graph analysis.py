@@ -112,7 +112,8 @@ if __name__ == '__main__':
 
     pos = sorted(zip(TeamRank(data.copy(), MOV=True, transform=possessions), teams), reverse=True)
     log = sorted(zip(TeamRank(data.copy(), MOV=True, transform=logistic), teams), reverse=True)
+    points = sorted(zip(TeamRank(data.copy(), MOV=True), teams), reverse=True)
     noMOV = sorted(zip(TeamRank(data.copy(), MOV=False), teams), reverse=True)
 
     for x in range(len(pos)):
-        print('{}|{}|{}|{}'.format(x + 1, noMOV[x][1], pos[x][1], log[x][1]))
+        print('{}|{}|{}|{}|{}'.format(x + 1, noMOV[x][1], points[x][1], pos[x][1], log[x][1]))
