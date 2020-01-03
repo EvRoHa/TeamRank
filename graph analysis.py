@@ -1,24 +1,8 @@
 import numpy as np
 from scipy.sparse import csc_matrix
 from math import e
-
-TEAMS = ["Air Force", "Akron", "Alabama", "Appalachian State", "Arizona", "Arizona State", "Arkansas",
-         "Arkansas State", "Army", "Auburn", "BYU", "Ball State", "Baylor", "Boise State", "Boston College",
-         "Bowling Green", "Buffalo", "California", "Central Michigan", "Charlotte", "Cincinnati", "Clemson",
-         "Coastal Carolina", "Colorado", "Colorado State", "Connecticut", "Duke", "East Carolina", "Eastern Michigan",
-         "Florida", "Florida Atlantic", "Florida International", "Florida State", "Fresno State", "Georgia",
-         "Georgia Southern", "Georgia State", "Georgia Tech", "Hawai'i", "Houston", "Illinois", "Indiana", "Iowa",
-         "Iowa State", "Kansas", "Kansas State", "Kent State", "Kentucky", "LSU", "Lafayette", "Liberty", "Louisiana",
-         "Louisiana Monroe", "Louisiana Tech", "Louisville", "Marshall", "Maryland", "Memphis", "Miami", "Miami (OH)",
-         "Michigan", "Michigan State", "Middle Tennessee", "Minnesota", "Mississippi State", "Missouri", "NC State",
-         "Navy", "Nebraska", "Nevada", "New Mexico", "New Mexico State", "North Carolina", "North Texas",
-         "Northern Illinois", "Northwestern", "Notre Dame", "Ohio", "Ohio State", "Oklahoma", "Oklahoma State",
-         "Old Dominion", "Ole Miss", "Oregon", "Oregon State", "Penn State", "Pittsburgh", "Purdue", "Rice", "Rutgers",
-         "SMU", "San Diego State", "San José State", "South Alabama", "South Carolina", "South Florida", "Stanford",
-         "Syracuse", "TCU", "Temple", "Tennessee", "Texas", "Texas A&M", "Texas State", "Texas Tech", "Toledo", "Troy",
-         "Tulane", "Tulsa", "UAB", "UCF", "UCLA", "UMass", "UNLV", "USC", "UT San Antonio", "UTEP", "Utah",
-         "Utah State", "Vanderbilt", "Virginia", "Virginia Tech", "Wake Forest", "Washington", "Washington State",
-         "West Virginia", "Western Michigan", "Wisconsin", "Wyoming"]
+import requests
+import json
 
 def possessions(x):
     td, fg, result = 0, 0, 0
@@ -31,6 +15,7 @@ def possessions(x):
         result += 1
         x -= 3
     return result
+
 
 def logistic(x, L=1, k=1, x0=0, y0=0, y1=0):
     """
@@ -45,10 +30,12 @@ def logistic(x, L=1, k=1, x0=0, y0=0, y1=0):
     y0 -= L
     L -= y0
 
-    return L / (1 + e**(-k*(x-x0)))+y0
+    return L / (1 + e ** (-k * (x - x0))) + y0
+
 
 def cap(x, xmax=28.):
     return max(x, xmax)
+
 
 def TeamRank(data, p=0.85, MOV=True, transform=None, **kwargs):
     """
@@ -65,7 +52,7 @@ def TeamRank(data, p=0.85, MOV=True, transform=None, **kwargs):
     if MOV:
         if transform == logistic:
             vfunc = np.vectorize(transform, excluded=['k', 'L', 'x0'])
-            data[data < 0] = vfunc(data[data < 0], L=kwargs['L'], k=kwargs['k'], x0=kwargs['x0'])
+            data[data < 0] = vfunc(data[data < 0])
         elif transform == cap:
             vfunc = np.vectorize(cap, excluded=['xmax'])
             data[data < 0] = vfunc(data[data < 0], xmax=kwargs['xmax'])
@@ -112,8 +99,20 @@ def TeamRank(data, p=0.85, MOV=True, transform=None, **kwargs):
 
 
 if __name__ == '__main__':
+    # Build the request URL
+    url = 'https://api.collegefootballdata.com/games?&year=2019'
+
+    # Get the data
+    data = json.loads(requests.get(url=url).text)
+
+    # Get a sorted list of FBS teams
+    teams = sorted(list(set([x['home_team'] for x in data])))
+
     data = np.genfromtxt('matrix.txt', dtype=float, delimiter=',', skip_header=0, autostrip=True)
-    result = TeamRank(data, MOV=True, transform=possessions)
-    result = [x for _, x in sorted(zip(result, TEAMS), reverse=True)]
-    for x in enumerate(result):
-        print(x[0] + 1, x[1])
+
+    pos = sorted(zip(TeamRank(data.copy(), MOV=True, transform=possessions), teams), reverse=True)
+    log = sorted(zip(TeamRank(data.copy(), MOV=True, transform=logistic), teams), reverse=True)
+    noMOV = sorted(zip(TeamRank(data.copy(), MOV=False), teams), reverse=True)
+
+    for x in range(len(pos)):
+        print('{}|{}|{}|{}'.format(x + 1, noMOV[x][1], pos[x][1], log[x][1]))
