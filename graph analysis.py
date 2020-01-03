@@ -112,8 +112,7 @@ def TeamRank(data, p=0.85, MOV=True, transform=None, **kwargs):
 
 
 if __name__ == '__main__':
-    with open('matrix.txt', 'r') as infile:
-        data = np.genfromtxt(infile, dtype=float, delimiter=',', skip_header=0, autostrip=True)
+    data = np.genfromtxt('matrix.txt', dtype=float, delimiter=',', skip_header=0, autostrip=True)
     result = TeamRank(data, MOV=True, transform=possessions)
     result = [x for _, x in sorted(zip(result, TEAMS), reverse=True)]
     for x in enumerate(result):
